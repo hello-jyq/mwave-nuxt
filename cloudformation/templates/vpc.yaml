@@ -1,0 +1,340 @@
+---
+# yamllint disable rule:line-length
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Generic 3-Subnet Vpc Template'
+
+Parameters:
+  Project:
+    Description: 'Project Code Used For Naming Resources (Required)'
+    Type: String
+    Default: 'ESEL'
+
+  Environment:
+    Description: 'Environment Code Used For Naming Resources (Required)'
+    Type: String
+    Default: 'POC'
+
+  VpcCidr:
+    Description: 'VPC CIDR Block (e.g. 10.0.0.0/24)'
+    Type: String
+    Default: 10.20.30.0/23
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+
+  VpcCidrCount:
+    Description: 'VPC Cidr Count For Subnet Ip Calculations'
+    Type: Number
+    Default: 8
+    MinValue: 1
+    MaxValue: 256
+
+  VpcCidrBits:
+    Description: 'Vpc Cidr Bits For Subnet Ip Calculations'
+    Type: Number
+    Default: 6
+    MinValue: 1
+    MaxValue: 32
+
+Resources:
+  Vpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !Ref 'VpcCidr'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Vpc'
+
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Internet Gateway'
+
+  VpcGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  SubnetPublicA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}a'
+      CidrBlock: !Select [0, !Cidr [!GetAtt Vpc.CidrBlock, !Ref VpcCidrCount, !Ref VpcCidrBits]]
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Public Subnet A'
+        - Key: AccessControl
+          Value: Public
+
+  SubnetPublicB:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}b'
+      CidrBlock: !Select [1, !Cidr [!GetAtt Vpc.CidrBlock, !Ref VpcCidrCount, !Ref VpcCidrBits]]
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Public Subnet B'
+        - Key: AccessControl
+          Value: Public
+
+  SubnetPublicC:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}c'
+      CidrBlock: !Select [2, !Cidr [!GetAtt Vpc.CidrBlock, !Ref VpcCidrCount, !Ref VpcCidrBits]]
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Public Subnet C'
+        - Key: AccessControl
+          Value: Public
+
+  SubnetPrivateA:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}a'
+      CidrBlock: !Select [3, !Cidr [!GetAtt Vpc.CidrBlock, !Ref VpcCidrCount, !Ref VpcCidrBits]]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Private Subnet A'
+        - Key: AccessControl
+          Value: Private
+
+  SubnetPrivateB:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}b'
+      CidrBlock: !Select [4, !Cidr [!GetAtt Vpc.CidrBlock, !Ref VpcCidrCount, !Ref VpcCidrBits]]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Private Subnet B'
+        - Key: AccessControl
+          Value: Private
+
+  SubnetPrivateC:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      AvailabilityZone: !Sub '${AWS::Region}c'
+      CidrBlock: !Select [5, !Cidr [!GetAtt Vpc.CidrBlock, !Ref VpcCidrCount, !Ref VpcCidrBits]]
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Private Subnet C'
+        - Key: AccessControl
+          Value: Private
+
+  RouteTablePublic:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'Vpc'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Public Subnet Route'
+
+  RouteAssocPublicA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'SubnetPublicA'
+      RouteTableId: !Ref 'RouteTablePublic'
+
+  RouteAssocPublicB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'SubnetPublicB'
+      RouteTableId: !Ref 'RouteTablePublic'
+
+  RouteAssocPublicC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'SubnetPublicC'
+      RouteTableId: !Ref 'RouteTablePublic'
+
+  RouteTablePrivateA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'Vpc'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Private Subnet A Route'
+
+  RouteTablePrivateB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'Vpc'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Private Subnet B Route'
+
+  RouteTablePrivateC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref 'Vpc'
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Private Subnet C Route'
+
+  RouteAssocPrivateA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'SubnetPrivateA'
+      RouteTableId: !Ref 'RouteTablePrivateA'
+
+  RouteAssocPrivateB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'SubnetPrivateB'
+      RouteTableId: !Ref 'RouteTablePrivateB'
+
+  RouteAssocPrivateC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref 'SubnetPrivateC'
+      RouteTableId: !Ref 'RouteTablePrivateC'
+
+  RouteTablePublicInternetRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: VpcGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTablePublic
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  NetworkAclPublic:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Public NACLs'
+
+  NetworkAclPrivate:
+    Type: 'AWS::EC2::NetworkAcl'
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub '${Project} ${Environment} Private NACLs'
+
+  SubnetNetworkAclAssociationPublicA:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref SubnetPublicA
+      NetworkAclId: !Ref NetworkAclPublic
+
+  SubnetNetworkAclAssociationPublicB:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref SubnetPublicB
+      NetworkAclId: !Ref NetworkAclPublic
+
+  SubnetNetworkAclAssociationPublicC:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref SubnetPublicC
+      NetworkAclId: !Ref NetworkAclPublic
+
+  SubnetNetworkAclAssociationPrivateA:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref SubnetPrivateA
+      NetworkAclId: !Ref NetworkAclPrivate
+
+  SubnetNetworkAclAssociationPrivateB:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref SubnetPrivateB
+      NetworkAclId: !Ref NetworkAclPrivate
+
+  SubnetNetworkAclAssociationPrivateC:
+    Type: 'AWS::EC2::SubnetNetworkAclAssociation'
+    Properties:
+      SubnetId: !Ref SubnetPrivateC
+      NetworkAclId: !Ref NetworkAclPrivate
+
+  NetworkAclEntryInPublicAllowAll:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAclPublic
+      RuleNumber: 99
+      Protocol: -1
+      RuleAction: allow
+      Egress: false
+      CidrBlock: '0.0.0.0/0'
+
+  NetworkAclEntryOutPublicAllowAll:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAclPublic
+      RuleNumber: 99
+      Protocol: -1
+      RuleAction: allow
+      Egress: true
+      CidrBlock: '0.0.0.0/0'
+
+  NetworkAclEntryInPrivateAllowVPC:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAclPrivate
+      RuleNumber: 99
+      Protocol: -1
+      RuleAction: allow
+      Egress: false
+      CidrBlock: '0.0.0.0/0'
+
+  NetworkAclEntryOutPrivateAllowVPC:
+    Type: 'AWS::EC2::NetworkAclEntry'
+    Properties:
+      NetworkAclId: !Ref NetworkAclPrivate
+      RuleNumber: 99
+      Protocol: -1
+      RuleAction: allow
+      Egress: true
+      CidrBlock: '0.0.0.0/0'
+
+Outputs:
+  VpcId:
+    Description: 'The Vpc Id'
+    Value: !Ref Vpc
+    Export:
+      Name: !Sub '${AWS::StackName}-VpcId'
+
+  VpcCidr:
+    Description: 'The Ip Address Cidr For The Vpc'
+    Value: !GetAtt 'Vpc.CidrBlock'
+    Export:
+      Name: !Sub '${AWS::StackName}-CidrBlock'
+
+  SubnetsPublic:
+    Description: 'List Of Public Subnet Ids'
+    Value: !Join [',', [!Ref SubnetPublicA, !Ref SubnetPublicB, !Ref SubnetPublicC]]
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetsPublic'
+
+  SubnetsPrivate:
+    Description: 'List Of Private Subnet Ids'
+    Value: !Join [',', [!Ref SubnetPrivateA, !Ref SubnetPrivateB, !Ref SubnetPrivateC]]
+    Export:
+      Name: !Sub '${AWS::StackName}-SubnetsPrivate'
+
+  RouteTablePublic:
+    Description: 'Public Route Table Id'
+    Value: !Ref RouteTablePublic
+    Export:
+      Name: !Sub '${AWS::StackName}-RouteTablePublic'
+
+  RouteTablesPrivate:
+    Description: 'List Of Private Route Tables'
+    Value: !Join [',', [!Ref RouteTablePrivateA, !Ref RouteTablePrivateB, !Ref RouteTablePrivateC]]
+    Export:
+      Name: !Sub '${AWS::StackName}-RouteTablesPrivate'

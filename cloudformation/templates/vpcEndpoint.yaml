@@ -1,0 +1,37 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Generic Vpc Endpoint Template'
+
+Parameters:
+  VpcId:
+    Description: 'The Vpc Id To Attach The Endpoint To (Required)'
+    Type: AWS::EC2::VPC::Id
+    Default: 'vpc-094a30b66027ba3d0'
+
+  RouteTablesPrivate:
+    Description: 'List Of Private Route Table Ids In Order (Required)'
+    Type: CommaDelimitedList
+    Default: 'rtb-09e110687557b793a, rtb-059a6830a25167e00, rtb-03726def3faceab23'
+
+  TargetEndpoint:
+    Description: 'The Endpoint To Connect The Vpc To (Required)'
+    Type: String
+    Default: s3
+    AllowedValues:
+      - 's3'
+      - 'dynamodb'
+
+Resources:
+  Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      RouteTableIds: !Ref RouteTablesPrivate
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.${TargetEndpoint}'
+      VpcId: !Ref 'VpcId'
+
+Outputs:
+  Endpoint:
+    Description: 'The VPC Target Endpoint'
+    Value: !Ref Endpoint
+    Export:
+      Name: !Sub '${AWS::StackName}-Endpoint'

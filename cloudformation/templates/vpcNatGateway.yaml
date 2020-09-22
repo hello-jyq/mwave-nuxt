@@ -1,0 +1,80 @@
+---
+# yamllint disable rule:line-length
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Generic Subnet Nat Gateway Template'
+
+Parameters:
+  SubnetsPublic:
+    Description: List Of Public Subnet Ids In Order (Required)
+    Type: CommaDelimitedList
+    Default: 'subnet-02f2e52cb805ba8a8, subnet-061effe518e46d3c5, subnet-0fe003ced30013e7a'
+
+  RouteTablesPrivate:
+    Description: List Of Private Route Table Ids In Order (Required)
+    Type: CommaDelimitedList
+    Default: 'rtb-09e110687557b793a, rtb-059a6830a25167e00, rtb-03726def3faceab23'
+
+  SubnetAzNo:
+    Description: Array Number Identifying Available Zone (e.g. A=0, B=1, C=2) (Required)
+    Type: Number
+    Default: 0
+    AllowedValues:
+      - 0
+      - 1
+      - 2
+
+Resources:
+  Eip:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: 'AWS::EC2::NatGateway'
+    Properties:
+      AllocationId: !GetAtt 'Eip.AllocationId'
+      SubnetId: !Select [!Ref SubnetAzNo, !Ref SubnetsPublic]
+
+  Route:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Select [!Ref SubnetAzNo, !Ref RouteTablesPrivate]
+      DestinationCidrBlock: '0.0.0.0/0'
+      NatGatewayId: !Ref NatGateway
+
+  AlarmNatGatewayErrorPortAllocation:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: !Join [' ', ['NAT Gateway In', !Select [!Ref SubnetAzNo, !GetAZs ''], 'Could Not Allocate A Source Port']]
+      Namespace: 'AWS/NATGateway'
+      MetricName: ErrorPortAllocation
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      Dimensions:
+        - Name: NatGatewayId
+          Value: !Ref NatGateway
+
+  AlarmNatGatewayPacketsDropCount:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmDescription: !Join [' ', ['NAT Gateway In', !Select [!Ref SubnetAzNo, !GetAZs ''], 'Dropped Packets']]
+      Namespace: 'AWS/NATGateway'
+      MetricName: PacketsDropCount
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 0
+      Dimensions:
+        - Name: NatGatewayId
+          Value: !Ref NatGateway
+
+Outputs:
+  IPAddress:
+    Description: 'The Public Ip Address Of The Nat Gateway'
+    Value: !Ref Eip
+    Export:
+      Name: !Sub '${AWS::StackName}-IPAddress'

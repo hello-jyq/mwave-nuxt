@@ -1,0 +1,43 @@
+# arn:aws:iam::844970018523:role/esel-prod-peerRole
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create a VPC Peering connection using the PeerRole to accept.
+Parameters:
+  PeerVPCAccountId:
+    Type: String
+    Default: '844970018523'
+
+  PeerVPCId:
+    Type: String
+    Default: 'vpc-14197571'
+
+  PeerRoleArn:
+    Type: String
+    Default: 'arn:aws:iam::844970018523:role/esel-prod-peerRole'
+
+  VpcId:
+    Description: 'The Vpc Id (Required)'
+    Type: AWS::EC2::VPC::Id
+    Default: 'vpc-094a30b66027ba3d0'
+
+  NameTag:
+    Type: String
+    Default: 'Esel Current Prod VPC Peering'
+
+Conditions:
+  HasPeerRoleArn: !Not [!Equals [!Ref PeerRoleArn, '']]
+
+Resources:
+  vpcPeeringConnection:
+    Type: 'AWS::EC2::VPCPeeringConnection'
+    Properties:
+      VpcId: !Ref VpcId
+      PeerVpcId: !Ref PeerVPCId
+      PeerOwnerId: !Ref PeerVPCAccountId
+      PeerRoleArn: !If [HasPeerRoleArn, !Ref PeerRoleArn, !Ref 'AWS::NoValue']
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+
+Outputs:
+  VPCPeeringConnectionId:
+    Value: !Ref vpcPeeringConnection

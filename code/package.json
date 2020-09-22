@@ -1,0 +1,49 @@
+{
+  "name": "sls_mwave_project",
+  "version": "1.0.0",
+  "description": "EMU project for mWave serverless ecommerce platform",
+  "repository": {
+    "type": "git",
+    "url": "https://mwaveau@dev.azure.com/mwaveau/EMU/_git/EMU"
+  },
+  "main": "index.js",
+  "engines": {
+    "node": "12.x"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nuxt",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "generate": "nuxt generate",
+    "deploy": "npm run build && sls deploy",
+    "start-server": "npm run build && node app.js",
+    "start-sls": "npm run build && sls offline start"
+  },
+  "keywords": [
+    "nuxtjs",
+    "viewjs",
+    "esel",
+    "mwave"
+  ],
+  "author": "AC3-ESEL",
+  "license": "ISC",
+  "dependencies": {
+    "@nuxtjs/axios": "^5.12.0",
+    "axios": "^0.19.2",
+    "body-parser": "^1.19.0",
+    "element-ui": "^2.13.2",
+    "express": "^4.17.1",
+    "helmet": "^4.0.0",
+    "nuxt": "^2.14.1",
+    "serverless-apigw-binary": "^0.4.4",
+    "serverless-http": "^2.5.0"
+  },
+  "devDependencies": {
+    "babel-plugin-component": "^1.1.1",
+    "nodemon": "^2.0.4",
+    "serverless-domain-manager": "^4.2.0",
+    "serverless-offline": "^3.25.7",
+    "serverless-plugin-cloudfront-lambda-edge": "^2.1.0"
+  }
+}

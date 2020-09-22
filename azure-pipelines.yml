@@ -1,0 +1,30 @@
+# Node.js with Vue
+# Build a Node.js project that uses Vue.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
+
+trigger:
+- develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+  
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '12.x'
+  displayName: 'Install Node.js'
+  
+- script: |
+    cd code/
+    npm install
+    #npm run build
+    npm install -g serverless
+    sls --version # check if sls is installed
+    scripts/install.sh   # installs aws cli 
+    echo "aws cli installed"
+    echo $(accesskey)
+    export SLS_DEBUG=*  #remove after debug
+    serverless config credentials --provider aws --key $(accesskey)  --secret $(accessSecret)  --overwrite  # set user to azuredevops role.
+    ./assume_role.sh  # perform sts assume role
+  displayName: 'npm install and build'
